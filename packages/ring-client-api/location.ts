@@ -323,17 +323,36 @@ export class Location extends Subscribed {
     const securityPanel = await this.getSecurityPanel(),
       updatedDataPromise = firstValueFrom(securityPanel.onData.pipe(skip(1)))
 
-    await this.sendCommandToSecurityPanel('security-panel.switch-mode', {
-      mode: alarmMode,
-      bypass: bypassSensorZids,
-    })
+    // Log the current state before attempting change
+    logDebug(`Current alarm mode: ${securityPanel.data.mode}`)
+    logDebug(`Attempting to set alarm mode to: ${alarmMode}`)
+    if (bypassSensorZids?.length) {
+      logDebug(`Bypassing sensors: ${bypassSensorZids.join(', ')}`)
+    }
 
-    const updatedData = await updatedDataPromise
+    try {
+      await this.sendCommandToSecurityPanel('security-panel.switch-mode', {
+        mode: alarmMode,
+        bypass: bypassSensorZids,
+      })
 
-    if (updatedData.mode !== alarmMode) {
-      throw new Error(
-        `Failed to set alarm mode to "${alarmMode}".  Sensors may require bypass, which can only be done in the Ring app.`,
-      )
+      const updatedData = await updatedDataPromise
+
+      logDebug(`Received updated data: ${JSON.stringify(updatedData)}`)
+
+      if (updatedData.mode !== alarmMode) {
+        throw new Error(
+          `Failed to set alarm mode to "${alarmMode}". Current state: ${JSON.stringify(
+            updatedData,
+            null,
+            2,
+          )}. ` +
+            'Sensors may require bypass, which can only be done in the Ring app.',
+        )
+      }
+    } catch (error) {
+      logError(`Error setting alarm mode: ${error}`)
+      throw error
     }
   }
 

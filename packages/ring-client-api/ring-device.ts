@@ -4,7 +4,7 @@ import { deviceTypesWithVolume } from './ring-types.ts'
 import { filter, map } from 'rxjs/operators'
 import type { Location } from './location.ts'
 import { Subscribed } from './subscribed.ts'
-import { logError } from './util.ts'
+import { logDebug, logError } from './util.ts'
 
 export class RingDevice extends Subscribed {
   onData
@@ -40,6 +40,11 @@ export class RingDevice extends Subscribed {
   }
 
   updateData(update: Partial<RingDeviceData>) {
+    logDebug(
+      `Updating device ${this.name} (${this.id}) with data: ${JSON.stringify(
+        update,
+      )}`,
+    )
     this.onData.next(Object.assign({}, this.data, update))
   }
 
